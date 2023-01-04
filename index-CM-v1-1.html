@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<head>
+<style>
+  pre {
+  pointer-events: none;
+}
+
+
+  @font-face {
+    font-family: "varimoji";
+  src: url("varimojiVF.woff2");
+}
+#innerBox {
+  width: 100%; 
+  height: 100%; 
+  background-image: url("images/box-bg.jpg"); 
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
+  background-size: cover; /* Resize the background image to cover the entire container */
+  background-color: #fff;
+  z-index: 100;
+}
+/*TODO not editable*/
+#varimojiDiv{
+  padding: 80px 0 30px 0;
+}
+</style>
+<!--<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>-->
+<script type="text/javascript" src="jquery.js"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <div id="varimojiDiv"></div>
+    <div id="box"><div id="innerBox"></div></div>
+    <pre id="output"></pre>
+  </div>
+
+</body>
+
+<script>
+  const BOXSIZE = 400;
+const HANDLESIZE = 5;
+var $box, $handle;
+const boxid = "box";
+
+// initial values
+var x = 50;
+var y = 50;
+
+// this gets called when the values change
+function XYUpdate() {
+  //output.textContent = `X: ${x.toFixed(2)}\nY: ${y.toFixed(2)}` //Coordinates of handle
+  // socket.emit in here
+  $('#varimojiDiv').html(`<div style="text-align: center; font-family: varimoji; font-size: 150px; font-variation-settings: 'ACTV' ${y.toFixed(2)}, 'VLNC' ${x.toFixed(2)}">A</div>`);
+}
+
+`X: \nY: `
+// range; changed by setMinMax
+const xR = {
+  min: -1,
+  max: 1
+};
+const yR = {
+  min: -1,
+  max: 1
+};
+
+// set ranges
+setMinMax(0, 100, 0, 100);
+// just call again to change (here: change just x range)
+setMinMax(0, 100, yR.min, yR.max);
+
+// change range of control
+function setMinMax(xmin, xmax, ymin, ymax) {
+  xR.min = xmin;
+  xR.max = xmax;
+  yR.min = ymin;
+  yR.max = ymax;
+  if (x < xmin) x = xmin;
+  if (x > xmax) x = xmax;
+  if (y < ymin) y = ymin;
+  if (y > ymax) y = ymax;
+  if (!$box) init();
+  else moveHandle();
+  XYUpdate();
+}
+
+function moveHandle() {
+  $handle.css({
+    left: (x - xR.min) / (xR.max - xR.min) * (BOXSIZE - HANDLESIZE),
+    top: (y - yR.min) / (yR.max - yR.min) * (BOXSIZE - HANDLESIZE)
+  });
+}
+
+// set up HTML and events
+function init() {
+  $box = $("#" + boxid);
+  $box.css({
+    width: BOXSIZE,
+    height: BOXSIZE,
+    boxShadow: '0 0 0 0px #111',
+    boxSizing: "border-box",
+    position: "relative",
+    margin: "0 auto"
+  });
+  if (!$handle) $handle = $('<div>');
+  $handle.css({
+    width: HANDLESIZE,
+    height: HANDLESIZE,
+    backgroundColor: '#FF6464',
+    position: "absolute",
+    border: "0px solid #FF6464",
+    borderRadius: "10px",
+    boxShadow: "0px 0px 30px 20px #FF6464",
+  });
+  moveHandle();
+  $box.append($handle);
+  // event handlers
+  $box.on("mousedown", e => {
+    handleGrabbed = true;
+    moveHandleToMouse(e);
+  });
+  $(document).on("mousemove", e => {
+    if (handleGrabbed) moveHandleToMouse(e);
+  }).on("mouseup", () => {
+    handleGrabbed = false;
+  });
+}
+
+// handle state
+var handleGrabbed = false;
+
+// update handle position and calculate x/y 
+function moveHandleToMouse(e) {
+  const bcr = $box.get()[0].getBoundingClientRect();
+  // x/y here is graphical
+  var gx = e.clientX - bcr.left - HANDLESIZE / 2;
+  var gy = e.clientY - bcr.top - HANDLESIZE / 2;
+  const BMH = BOXSIZE - HANDLESIZE;
+  // limit handle position to inside box
+  if (gx < 0) gx = 0;
+  if (gx > BMH) gx = BMH;
+  if (gy < 0) gy = 0;
+  if (gy > BMH) gy = BMH;
+  // actually move handle div
+  $handle.css({
+    left: gx,
+    top: gy
+  });
+  // graphical range is converted to 0 - 1 range with origin at bottom left
+  // then converted to actual range values
+  x = (gx / BMH) * (xR.max - xR.min) + xR.min;
+  y = (1.0 - gy / BMH) * (yR.max - yR.min) + yR.min;
+  XYUpdate();
+}
+
+</script>
+</html>
